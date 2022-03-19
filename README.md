@@ -1,2 +1,2 @@
 # elgarenta
-C++ 2D Game Engine
+C++ 2D Game Engine for Linux
