@@ -3,7 +3,7 @@ LIBRARIES=-lGL -lglfw -lpthread
 OUTPUT=example_square.out
 INCLUDE=-I./imgui -I./
 DSO=-ldl
-SETTINGS=-O0 -g
+SETTINGS=-g
 
 all: clean
 	g++ ${FILES} ${LIBRARIES} ${DSO} ${SETTINGS} ${INCLUDE} -o ${OUTPUT}

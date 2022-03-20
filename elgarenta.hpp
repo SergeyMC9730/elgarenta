@@ -11,63 +11,79 @@
 #include <algorithm>
 
 #define MAX_JOBS 256
+#define JOB_RECTANGLE 1
 
 #pragma pack(push, 1)
 namespace elgarenta {
     //lookup table for 8bit pixel -> 24bit pixel
     extern uint8_t coltable[256][3];
     typedef struct {
-        int w, h;
+        uint32_t w, h;
         char *buffer;
-        unsigned int texture;
-        int size;
+        uint32_t texture;
+        uint32_t size;
     } image_t;
     typedef struct {
         //1 - rectangle
         uint8_t job;
         uint16_t priority;
-        int x, y;
-        int sx, sy;
-        uint8_t color;
+        uint32_t x, y;
+        uint32_t sx, sy;
+        uint8_t color[3];
         bool used = false;
         int id;
     } job_t;
     void onError(int error, const char *description);
     class Instance {
-            job_t render_jobs[MAX_JOBS];
             bool firstr = true;
+            bool updating = false;
+            bool onJob = false;
+            bool noJob = false;
             void render() {
                 if(!firstr) glDeleteTextures(1, &render_instance.texture);
 
                 //render
-                char *render_buffer = (char *)malloc(renderw * renderh);
+                char render_matrix[renderw][renderh][3];
+                char *render_buffer = (char *)render_matrix;
                 int ii = 0;
-                //while(ii < renderw * renderh) render_buffer[ii++] = 0;
+                while(ii < (renderw * renderh * 3)) render_buffer[ii++] = 0;
                 if(!render_buffer) return;
+
+                render_matrix[0][0][0] = 255;
 
                 int i = 0;
                 while(i < MAX_JOBS){
+                    while(updating) {
+                        i = 0;
+                        ii = 0;
+                        while(ii < (renderw * renderh * 3)) render_buffer[ii++] = 0;
+                    }
                     if(render_jobs[i].used) {
-                        printf("render job %d\n", render_jobs[i].job);
+                        onJob = true;
                         switch(render_jobs[i].job) {
-                            case 0: { //square
-                                int i1 = render_jobs[i1].x, i2 = render_jobs[i1].y;
-                                while(i1 < (render_jobs[i1].x + render_jobs[i1].sx)) {
-                                    while(i2 < (render_jobs[i1].y + render_jobs[i1].sy)) {
-                                        int tmp = (render_jobs[i1].sx * ((render_jobs[i1].y + i2) - 1) + ((render_jobs[i1].x + i1) + 1) - 1);
-                                        render_buffer[tmp] = render_jobs[i1].color;
-                                        i2++;
+                            case 1: { //rectangle
+                                int i1 = render_jobs[i].x, i2 = render_jobs[i].y;
+                                while(i1 < (render_jobs[i].x + render_jobs[i].sx)) {
+                                    if(i1 < renderw) {
+                                        while(i2 < (render_jobs[i].y + render_jobs[i].sy)) {
+                                            if(i2 < renderh){
+                                                render_matrix[i1][i2][0] = render_jobs[i].color[0];
+                                                render_matrix[i1][i2][1] = render_jobs[i].color[1];
+                                                render_matrix[i1][i2][2] = render_jobs[i].color[2];
+                                            }
+                                            i2++;
+                                        }
                                     }
                                     i1++;
-                                    i2 = render_jobs[i1].y;
+                                    i2 = render_jobs[i].y;
                                 }
                             }
                         }
+                        onJob = false;
                     }
                     i++;
                 }
                 render_instance = create_image(render_buffer, renderw, renderh);
-                free(render_buffer);
                 firstr = false;
             }
             void runner() {
@@ -141,6 +157,7 @@ namespace elgarenta {
                 return;
             }
         public:
+            job_t render_jobs[MAX_JOBS];
             int w, h;
             int renderw, renderh;
             const char *title;
@@ -164,13 +181,26 @@ namespace elgarenta {
                 #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
                     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
                 #endif
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB8, GL_UNSIGNED_BYTE, buffer);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
                 IM_ASSERT(true);
 
                 return img;
             }
-            int create_job(job_t j) {
+            job_t &get_job(int id) {
+                int ii = 0;
+                while(ii < MAX_JOBS){
+                    if(render_jobs[ii].id = id) {
+                        return render_jobs[ii];
+                    }
+                    ii++;
+                }
+                job_t g;
+                return g;
+            }
+            job_t &create_job(job_t j) {
+                while(onJob);
+                updating = true;
                 int ii = 0;
                 while(ii < MAX_JOBS){
                     if(!render_jobs[ii].used) {
@@ -179,13 +209,18 @@ namespace elgarenta {
                         render_jobs[ii].id = iid;
                         render_jobs[ii].used = true;
                         std::sort(render_jobs, render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority < r.priority;});
-                        return iid;
+                        updating = false;
+                        return get_job(iid);
                     }
                     ii++;
                 }
-                return -1;
+                updating = false;
+                job_t g;
+                return g;
             }
             void update_job(int id, job_t j){
+                while(onJob);
+                updating = true;
                 int ii = 0;
                 while(ii < MAX_JOBS) {
                     if(render_jobs[ii].id = id){
@@ -194,20 +229,13 @@ namespace elgarenta {
                         render_jobs[ii].used = true;
                         render_jobs[ii].id = tmpi;
                         std::sort(render_jobs, render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority < r.priority;});
+                        updating = false;
                         return;
                     }
                     ii++;
                 }
-            }
-            job_t *get_job(int id) {
-                int ii = 0;
-                while(ii < MAX_JOBS){
-                    if(render_jobs[ii].id = id) {
-                        return &render_jobs[ii];
-                    }
-                    ii++;
-                }
-                return nullptr;
+                updating = false;
+                return;
             }
             void start(){
                 srand(8);
@@ -216,6 +244,6 @@ namespace elgarenta {
             }
     };
 
-    Instance create_instance(int w, int h, const char *title);
+    Instance &create_instance(int w, int h, const char *title);
 }
 #pragma pack(pop)
