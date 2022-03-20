@@ -12,11 +12,9 @@ int main(){
     j.y = 8;
     j.job = 1;
     int r = i.create_job(j);
+    elgarenta::job_t *jj = i.get_job(r);
     while(i.status[0] != 2) {
-        if(r != -1){
-            j.color++;
-            i.update_job(r, j);
-        }
+        if(r != -1) jj->color++;
     }
     printf("Main closing\n");
     return 0;

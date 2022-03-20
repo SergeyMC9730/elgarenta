@@ -30,6 +30,7 @@ namespace elgarenta {
         int sx, sy;
         uint8_t color;
         bool used = false;
+        int id;
     } job_t;
     void onError(int error, const char *description);
     class Instance {
@@ -37,9 +38,6 @@ namespace elgarenta {
             bool firstr = true;
             void render() {
                 if(!firstr) glDeleteTextures(1, &render_instance.texture);
-
-                //sort jobs by priority
-                std::sort(render_jobs, render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority < r.priority;});
 
                 //render
                 char *render_buffer = (char *)malloc(renderw * renderh);
@@ -177,18 +175,42 @@ namespace elgarenta {
                 while(ii < MAX_JOBS){
                     if(!render_jobs[ii].used) {
                         render_jobs[ii] = j;
+                        int iid = rand() % (MAX_JOBS * 8);
+                        render_jobs[ii].id = iid;
                         render_jobs[ii].used = true;
-                        return ii;
+                        std::sort(render_jobs, render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority < r.priority;});
+                        return iid;
                     }
                     ii++;
                 }
                 return -1;
             }
             void update_job(int id, job_t j){
-                render_jobs[id] = j;
-                render_jobs[id].used = true;
+                int ii = 0;
+                while(ii < MAX_JOBS) {
+                    if(render_jobs[ii].id = id){
+                        int tmpi = render_jobs[ii].id; 
+                        render_jobs[ii] = j;
+                        render_jobs[ii].used = true;
+                        render_jobs[ii].id = tmpi;
+                        std::sort(render_jobs, render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority < r.priority;});
+                        return;
+                    }
+                    ii++;
+                }
+            }
+            job_t *get_job(int id) {
+                int ii = 0;
+                while(ii < MAX_JOBS){
+                    if(render_jobs[ii].id = id) {
+                        return &render_jobs[ii];
+                    }
+                    ii++;
+                }
+                return nullptr;
             }
             void start(){
+                srand(8);
                 std::thread thr(&Instance::runner, this);
                 thr.detach();
             }
