@@ -1,8 +1,16 @@
 #include "./elgarenta.hpp"
 
+elgarenta::instance_t inst;
+
 int main(){
-    elgarenta::Instance &i = elgarenta::create_instance(1280, 720, "Elgarenta Example");
-    printf("Instance created\n");
+    // elgarenta::Instance &i = elgarenta::create_instance(1280, 720, "Elgarenta Example");
+    inst.w = 1280;
+    inst.h = 720;
+    inst.title = "Elgarenta Example";
+    inst.renderh = 100;
+    inst.renderw = 100;
+    inst.firstr = true;
+    elgarenta::start(&inst);
 
     elgarenta::job_t j; elgarenta::job_t j2;
     j.color[0] = 0; j.color[1] = 0; j.color[2] = 255; j2.color[0] = 255; j2.color[1] = 0; j2.color[2] = 0;
@@ -13,28 +21,17 @@ int main(){
     j.y = 8; j2.y = 16;
     j.job = JOB_RECTANGLE; j2.job = JOB_RECTANGLE;
 
-    elgarenta::job_t &r = i.create_job(j); elgarenta::job_t &l = i.create_job(j2);
+    elgarenta::job_t *r = elgarenta::create_job(j, &inst); elgarenta::job_t *l = elgarenta::create_job(j2, &inst); 
 
-    //find right struct
-    int ii = 0, ii2 = 0;
-    while(ii < MAX_JOBS) {
-        if(i.render_jobs[ii].id = r.id) break;
-        ii++;
-    }
-    while(ii2 < MAX_JOBS) {
-        if(i.render_jobs[ii2].id = r.id) break;
-        ii2++;
-    }
+    while(inst.status[0] != 2) {
+        r->x++;
+        r->sx++;
+        r->y++;
+        r->color[0]++;
 
-    while(i.status[0] != 2) {
-        i.render_jobs[ii].x++;
-        i.render_jobs[ii].sx++;
-        i.render_jobs[ii].y++;
-        i.render_jobs[ii].color[0]++;
-
-        if(i.render_jobs[ii].x == 90) i.render_jobs[ii].x = 0;
-        if(i.render_jobs[ii].y == 90) i.render_jobs[ii].y = 0;
-        if(i.render_jobs[ii].sx == 60) i.render_jobs[ii].sx = 50;
+        if(r->x == 90) r->x = 0;
+        if(r->y == 90) r->y = 0;
+        if(r->sx == 60) r->sx = 50;
         
     }
     printf("Main closing\n");
