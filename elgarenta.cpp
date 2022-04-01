@@ -38,7 +38,15 @@ void elgarenta::render(elgarenta::instance_t *inst){
                     while((i1 < (inst->render_jobs[i].x + inst->render_jobs[i].sx)) && (inst->render_jobs[i].x < inst->renderw) && (inst->render_jobs[i].y < inst->renderh)) {
                         if(i1 < inst->renderw){
                             while(i2 < (inst->render_jobs[i].y + inst->render_jobs[i].sy)) {
-                                if(i2 < inst->renderh) memcpy(&render_matrix[i1][i2], &inst->render_jobs[i].color, 3);
+                                if(i2 < inst->renderh) {
+                                    if(inst->render_jobs[i].blend) {
+                                        render_matrix[i1][i2][0] += inst->render_jobs[i].color[0];
+                                        render_matrix[i1][i2][1] += inst->render_jobs[i].color[1];
+                                        render_matrix[i1][i2][2] += inst->render_jobs[i].color[2];
+                                    } else {
+                                        memcpy(&render_matrix[i1][i2], &inst->render_jobs[i].color, 3);   
+                                    }
+                                }
                                 i2++;
                             }
                         }

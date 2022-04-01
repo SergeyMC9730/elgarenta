@@ -6,9 +6,10 @@
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
 #include <thread>
-#include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <algorithm>
+#include <chrono>
 
 #define MAX_JOBS 256
 #define JOB_RECTANGLE 1
@@ -24,12 +25,12 @@ namespace elgarenta {
         uint32_t size;
     } image_t;
     typedef struct {
-        //1 - rectangle
         uint8_t job;
         uint16_t priority;
         uint32_t x, y;
         uint32_t sx, sy;
         uint8_t color[3];
+        bool blend = false;
         bool used = false;
         int id;
     } job_t;
@@ -44,6 +45,8 @@ namespace elgarenta {
         int renderw, renderh;
         const char *title;
         GLFWwindow *window;
+        //code will run
+        uint16_t wait_time;
         int status[3];
     } instance_t;
     void onError(int error, const char *description);

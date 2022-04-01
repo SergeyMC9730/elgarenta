@@ -20,19 +20,21 @@ int main(){
     j.x = 8; j2.x = 16;
     j.y = 8; j2.y = 16;
     j.job = JOB_RECTANGLE; j2.job = JOB_RECTANGLE;
+    //j2.blend = true;
+    j.blend = true;
 
     elgarenta::job_t *r = elgarenta::create_job(j, &inst); elgarenta::job_t *l = elgarenta::create_job(j2, &inst); 
 
     while(inst.status[0] != 2) {
-        r->x++;
-        r->sx++;
-        r->y++;
-        r->color[0]++;
+        // r->x++;
+        // r->sx++;
+        // r->y++;
+        // r->color[0]++;
 
-        if(r->x == 90) r->x = 0;
-        if(r->y == 90) r->y = 0;
-        if(r->sx == 60) r->sx = 50;
-        
+        // if(r->x == 90) r->x = 0;
+        // if(r->y == 90) r->y = 0;
+        // if(r->sx == 60) r->sx = 50;
+        std::this_thread::sleep_for(std::chrono::seconds(8));
     }
     printf("Main closing\n");
     return 0;
