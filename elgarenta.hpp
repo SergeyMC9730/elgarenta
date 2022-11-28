@@ -11,8 +11,10 @@
 #include <algorithm>
 #include <chrono>
 
-#define MAX_JOBS 256
+#define MAX_JOBS 64
 #define JOB_RECTANGLE 1
+
+#define E_CLOSE_STATE 2
 
 #pragma pack(push, 1)
 namespace elgarenta {
@@ -45,9 +47,8 @@ namespace elgarenta {
         int renderw, renderh;
         const char *title;
         GLFWwindow *window;
-        //code will run
-        uint16_t wait_time;
         int status[3];
+	char *fb;
     } instance_t;
     void onError(int error, const char *description);
     void render(instance_t *inst);

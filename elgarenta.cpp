@@ -20,8 +20,9 @@ void elgarenta::onError(int error, const char *description){
 void elgarenta::render(elgarenta::instance_t *inst){
     if(!inst->firstr) glDeleteTextures(1, &inst->rendered_image.texture);
 
-    char render_matrix[inst->renderw][inst->renderh][3];
-    char *render_buffer = (char *)render_matrix;
+    // printf("RENDER FRAME\n");
+
+    char *render_buffer = (char *)inst->fb;
     int ii = 0, i = 0;
     while(ii < (inst->renderw * inst->renderh * 3)) render_buffer[ii++] = 0;
     
@@ -40,11 +41,14 @@ void elgarenta::render(elgarenta::instance_t *inst){
                             while(i2 < (inst->render_jobs[i].y + inst->render_jobs[i].sy)) {
                                 if(i2 < inst->renderh) {
                                     if(inst->render_jobs[i].blend) {
-                                        render_matrix[i1][i2][0] += inst->render_jobs[i].color[0];
-                                        render_matrix[i1][i2][1] += inst->render_jobs[i].color[1];
-                                        render_matrix[i1][i2][2] += inst->render_jobs[i].color[2];
+					// printf("obj is blend\n");
+                                        inst->fb[i1 * inst->renderw * 3 + i2 * 3 + 0] += inst->render_jobs[i].color[0];
+                                        inst->fb[i1 * inst->renderw * 3 + i2 * 3 + 1] += inst->render_jobs[i].color[1];
+                                        inst->fb[i1 * inst->renderw * 3 + i2 * 3 + 2] += inst->render_jobs[i].color[2];
                                     } else {
-                                        memcpy(&render_matrix[i1][i2], &inst->render_jobs[i].color, 3);   
+                                        inst->fb[i1 * inst->renderw * 3 + i2 * 3 + 0] = inst->render_jobs[i].color[0];
+					inst->fb[i1 * inst->renderw * 3 + i2 * 3 + 1] = inst->render_jobs[i].color[1];
+					inst->fb[i1 * inst->renderw * 3 + i2 * 3 + 2] = inst->render_jobs[i].color[2];
                                     }
                                 }
                                 i2++;
@@ -64,7 +68,7 @@ void elgarenta::render(elgarenta::instance_t *inst){
 }
 void elgarenta::runner(elgarenta::instance_t *inst){
     if(!glfwInit()) {
-        inst->status[0] = 2;
+        inst->status[0] = E_CLOSE_STATE;
         return;
     }
     glfwSetErrorCallback(elgarenta::onError);
@@ -87,13 +91,13 @@ void elgarenta::runner(elgarenta::instance_t *inst){
     #endif
     inst->window = glfwCreateWindow(inst->w, inst->h, inst->title, nullptr, nullptr);
     if(!inst->window) {
-        inst->status[0] = 2;
+        inst->status[0] = E_CLOSE_STATE;
         return;
     }
     glfwMakeContextCurrent(inst->window);
     glfwSwapInterval(1);
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO(); // (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsClassic();
     ImGui::StyleColorsClassic();
@@ -101,15 +105,17 @@ void elgarenta::runner(elgarenta::instance_t *inst){
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     ImVec4 cc = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
+	
+    inst->fb = (char *)malloc(inst->renderw * inst->renderh * 3);
     while(!glfwWindowShouldClose(inst->window)){
+	render(inst);
+	
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         ImGui::Begin("Elgarenta Window", nullptr);
-        render(inst);
         ImGui::Image((void *)(intptr_t)inst->rendered_image.texture, ImVec2(inst->rendered_image.w * inst->rendered_image.size, inst->rendered_image.h * inst->rendered_image.size));
         ImGui::End();
 
@@ -129,7 +135,7 @@ void elgarenta::runner(elgarenta::instance_t *inst){
     glfwDestroyWindow(inst->window);
     glfwTerminate();
 
-    inst->status[0] = 2;
+    inst->status[0] = E_CLOSE_STATE;
     return;
 }
 elgarenta::image_t elgarenta::create_image(char *buffer, int w, int h){
@@ -151,13 +157,11 @@ elgarenta::image_t elgarenta::create_image(char *buffer, int w, int h){
     #endif
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
-    IM_ASSERT(true);
-
     return img;
 }
 elgarenta::job_t *elgarenta::get_job(int id, elgarenta::instance_t *inst) {
     int ii = 0;
-    while(ii < MAX_JOBS){
+    while(ii < MAX_JOBS) {
         if(inst->render_jobs[ii].id == id) return &inst->render_jobs[ii];
         ii++;
     }
@@ -173,9 +177,10 @@ elgarenta::job_t *elgarenta::create_job(elgarenta::job_t j, elgarenta::instance_
             int id = rand() % (MAX_JOBS * 8);
             inst->render_jobs[ii].id = id;
             inst->render_jobs[ii].used = true;
-            std::sort(inst->render_jobs, inst->render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority > r.priority;});
+            // std::sort(inst->render_jobs, inst->render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority > r.priority;});
             inst->updating = false;
-            return get_job(id, inst);
+	    printf("[Elgarenta] Created job %d:%d", ii, id);
+            return &inst->render_jobs[ii];
         }
         ii++;
     }
@@ -191,7 +196,7 @@ void elgarenta::update_job(int id, elgarenta::job_t j, elgarenta::instance_t *in
             int tmpid = inst->render_jobs[ii].id;
             inst->render_jobs[ii] = j;
             inst->render_jobs[ii].id = tmpid;
-            std::sort(inst->render_jobs, inst->render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority > r.priority;});
+            // std::sort(inst->render_jobs, inst->render_jobs + MAX_JOBS, [](job_t const &l, job_t const &r) {return l.priority > r.priority;});
             inst->updating = false;
             return;
         }
