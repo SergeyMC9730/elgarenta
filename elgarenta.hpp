@@ -13,6 +13,7 @@
 
 #define MAX_JOBS 64
 #define JOB_RECTANGLE 1
+#define JOB_FBPIPE    2
 
 #define E_CLOSE_STATE 2
 
@@ -35,6 +36,7 @@ namespace elgarenta {
         bool blend = false;
         bool used = false;
         int id;
+	void *arg0; // For JOB_FBPIPE -> Framebuffer address
     } job_t;
     typedef struct {
         bool firstr = true;

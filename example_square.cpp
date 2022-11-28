@@ -9,13 +9,12 @@ int main(){
     inst.title = "Elgarenta Example";
     inst.renderh = 100;
     inst.renderw = 100;
-    inst.firstr = true;
     elgarenta::start(&inst);
 
     elgarenta::job_t j; elgarenta::job_t j2; elgarenta::job_t j3; elgarenta::job_t j4;
     j.color[0] = 0; j.color[1] = 0; j.color[2] = 255; j2.color[0] = 255; j2.color[1] = 0; j2.color[2] = 0;
     j3.priority = 0; j.priority = 1; j2.priority = 2;
-    j.sx = 50; j2.sx = 50; j3.sx = 50; j4.sx = 100;
+    j.sx = 50; j2.sx = 50; j3.sx = 50;  j4.sx = 100;
     j.sy = 50; j2.sy = 50; j3.sy = 100; j4.sy = 100;
     j.x = 8; j2.x = 16; j3.x = 0;
     j.y = 8; j2.y = 16; j3.y = 0;
@@ -54,7 +53,6 @@ int main(){
 
 	if(b->x == 50) b->x = 0;
 
-	printf("x:%d\n", b->x);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     printf("Main closing\n");
